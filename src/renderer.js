@@ -2,7 +2,7 @@ const NUM_LANES   = 6
 const CENTER      = { x: 400, y: 400 }
 const HIT_RADIUS  = 280
 const SPAWN_RADIUS= 12
-const LANE_COLORS = ['#000000','#000000','#000000','#000000','#000000','#000000']
+const LANE_COLORS = ['#AA0000','#AAAA00','#00AA00','#00AAAA','#0000AA','#AA00AA']
 
 let canvas = null
 let ctx    = null
@@ -22,12 +22,26 @@ export function laneAngle(lane) {
   return (lane / NUM_LANES) * Math.PI * 2 - Math.PI / 2
 }
 
+const X_RADIUS = 340   // wider horizontally
+const Y_RADIUS = 200   // shorter vertically
+
 export function lanePos(lane) {
-  const a = laneAngle(lane)
-  return {
-    x: CENTER.x + Math.cos(a) * HIT_RADIUS,
-    y: CENTER.y + Math.sin(a) * HIT_RADIUS
+  // 3 buttons on each side in offset columns
+  // Left side: lanes 5,4,3 (A,S,D) | Right side: lanes 0,1,2 (J,K,L)
+
+  const positions = {
+    // Right side (offset columns)
+    0: { x: CENTER.x + 320, y: CENTER.y - 140 },  // J - top right (inset)
+    1: { x: CENTER.x + 360, y: CENTER.y       },  // K - middle right (outset)
+    2: { x: CENTER.x + 320, y: CENTER.y + 140 },  // L - bottom right (inset)
+
+    // Left side (offset columns)
+    3: { x: CENTER.x - 320, y: CENTER.y + 140 },  // D - bottom left (inset)
+    4: { x: CENTER.x - 360, y: CENTER.y       },  // S - middle left (outset)
+    5: { x: CENTER.x - 320, y: CENTER.y - 140 },  // A - top left (inset)
   }
+
+  return positions[lane]
 }
 
 export function clearFrame(playing) {
@@ -40,31 +54,40 @@ export function clearFrame(playing) {
   }
 }
 export function drawStatic() {
-  // hit ring
+  // hit ring — ellipse instead of circle
   ctx.beginPath()
-  ctx.arc(CENTER.x, CENTER.y, HIT_RADIUS, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+  ctx.ellipse(CENTER.x, CENTER.y, X_RADIUS, Y_RADIUS, 0, 0, Math.PI * 2)
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'
   ctx.lineWidth   = 1.5
   ctx.stroke()
 
   // inner ring
   ctx.beginPath()
-  ctx.arc(CENTER.x, CENTER.y, 32, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)'
+  ctx.ellipse(CENTER.x, CENTER.y, 32, 20, 0, 0, Math.PI * 2)
+  ctx.strokeStyle = 'rgba(0,255,231,0.15)'
   ctx.lineWidth   = 1
   ctx.stroke()
 
   // lane lines
   for (let i = 0; i < NUM_LANES; i++) {
-    const a = laneAngle(i)
+    const a  = laneAngle(i)
+    const x0 = CENTER.x + Math.cos(a) * 34
+    const y0 = CENTER.y + Math.sin(a) * 20
+    const { x: x1, y: y1 } = lanePos(i)
+    // shorten the line so it doesn't overlap the button
+    const dx = x1 - x0, dy = y1 - y0
+    const len = Math.sqrt(dx*dx + dy*dy)
+    const nx = dx/len, ny = dy/len
     ctx.beginPath()
-    ctx.moveTo(CENTER.x + Math.cos(a) * 34,               CENTER.y + Math.sin(a) * 34)
-    ctx.lineTo(CENTER.x + Math.cos(a) * (HIT_RADIUS - 28), CENTER.y + Math.sin(a) * (HIT_RADIUS - 28))
+    ctx.moveTo(x0, y0)
+    ctx.lineTo(x1 - nx*28, y1 - ny*28)
     ctx.strokeStyle = LANE_COLORS[i] + '18'
     ctx.lineWidth   = 1
     ctx.stroke()
   }
 }
+
+const LANE_KEYS = ['J','K','L','D','S','A']
 
 export function drawButtons(pressedLanes = new Set()) {
   for (let i = 0; i < NUM_LANES; i++) {
@@ -100,17 +123,28 @@ export function drawButtons(pressedLanes = new Set()) {
       ctx.fillStyle = color + '33'
       ctx.fill()
     }
+
+    ctx.font         = '11px "Share Tech Mono", monospace'
+    ctx.textAlign    = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle    = pressed ? color : color + '99'
+    ctx.fillText(LANE_KEYS[i], x, y)
   }
 }
 
 export function drawNote(dot, wallNow) {
   const elapsed  = (wallNow - dot.spawnWall) / 1000
   const progress = elapsed / dot.travelTime
-  const r        = SPAWN_RADIUS + (HIT_RADIUS - SPAWN_RADIUS) * Math.min(progress, 1.0)
-  const a        = laneAngle(dot.lane)
-  const x        = CENTER.x + Math.cos(a) * r
-  const y        = CENTER.y + Math.sin(a) * r
-  const color    = LANE_COLORS[dot.lane]
+
+  // Get target button position
+  const targetPos = lanePos(dot.lane)
+
+  // Linear interpolation from center to button position
+  const t = Math.min(progress, 1.0)
+  const x = CENTER.x + (targetPos.x - CENTER.x) * t
+  const y = CENTER.y + (targetPos.y - CENTER.y) * t
+
+  const color = LANE_COLORS[dot.lane]
 
   if (dot.hit) {
     drawHitBurst(x, y, color, (wallNow - dot.hitWall) / 350)

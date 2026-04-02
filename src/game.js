@@ -1,6 +1,6 @@
 import { songTime } from './audio.js'
 
-const TRAVEL_TIME       = 1.4
+const TRAVEL_TIME       = 2.5
 const HIT_WINDOW_PERFECT = 0.060
 const HIT_WINDOW_GOOD    = 0.120
 const MISS_WINDOW        = 0.150
@@ -58,6 +58,11 @@ export function getDots() {
 export function getScore()    { return score }
 export function getCombo()    { return combo }
 export function getMaxCombo() { return maxCombo }
+
+export function setTravelTime(seconds) {
+  TRAVEL_TIME = seconds  
+}
+
 
 export function triggerLane(lane) {
   if (!running) return

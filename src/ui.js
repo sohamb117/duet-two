@@ -3,6 +3,7 @@ let onLoadAudio = () => {}
 let onStart     = () => {}
 let onRetry     = () => {}
 let onOffset    = () => {}
+let onSpeed = () => {}
 
 export function initUI(callbacks) {
   onLoadOsu   = callbacks.onLoadOsu   || onLoadOsu
@@ -10,6 +11,7 @@ export function initUI(callbacks) {
   onStart     = callbacks.onStart     || onStart
   onRetry     = callbacks.onRetry     || onRetry
   onOffset    = callbacks.onOffset    || onOffset
+  onSpeed     = callbacks.onSpeed     || onSpeed
 
   injectStyles()
   buildStartScreen()
@@ -36,6 +38,11 @@ function buildStartScreen() {
       <input type="range" id="offset-slider" min="-200" max="200" step="1" value="0">
       <span id="offset-val">0 ms</span>
     </div>
+    <div class="offset-row">
+  <span class="dim">SPEED</span>
+  <input type="range" id="speed-slider" min="0.5" max="5.0" step="0.1" value="2.5">
+  <span id="speed-val">2.5s</span>
+</div>
     <div class="key-legend">A &nbsp;|&nbsp; S &nbsp;|&nbsp; D &nbsp;|&nbsp; J &nbsp;|&nbsp; K &nbsp;|&nbsp; L</div>
   `
   document.getElementById('app').appendChild(screen)
@@ -47,6 +54,11 @@ function buildStartScreen() {
     const ms = parseInt(e.target.value)
     document.getElementById('offset-val').textContent = ms + ' ms'
     onOffset(ms)
+  })
+  document.getElementById('speed-slider').addEventListener('input', e => {
+    const val = parseFloat(e.target.value)
+    document.getElementById('speed-val').textContent = val.toFixed(1) + 's'
+    onSpeed(val)
   })
 }
 
@@ -102,7 +114,7 @@ export function updateScore(score, combo) {
 
 export function showFeedback(grade) {
   const el     = document.getElementById('feedback')
-  const colors = { PERFECT: '#000000', GOOD: '#000000', MISS: '#000000' }
+  const colors = { PERFECT: '#7cb4f5', GOOD: '#f5e37c', MISS: '#f57c7c' }
   el.textContent   = grade
   el.style.color   = colors[grade] || 'black'
   el.style.opacity = 1
@@ -261,7 +273,24 @@ function injectStyles() {
       outline: none;
     }
 
+    #speed-slider {
+      -webkit-appearance: none;
+      width: 140px;
+      height: 2px;
+      background: rgba(0,0,0,0.2);
+      outline: none;
+    }
+
     #offset-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    
+    #speed-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 10px;
       height: 10px;
@@ -271,6 +300,8 @@ function injectStyles() {
     }
 
     #offset-val { color: var(--accent); width: 44px; }
+
+    #speed-val { color: var(--accent); width: 44px; }
 
     .key-legend {
       font-size: 11px;
