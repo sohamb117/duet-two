@@ -4,6 +4,7 @@ import { loadAudio, play, stop, setOffset, initAudio, isReady, playHitSound } fr
 import { initRenderer, clearFrame, drawStatic, drawButtons, drawNote } from './renderer.js'
 import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane } from './game.js'
 import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults } from './ui.js'
+import { initGamepad, pollGamepads, getPressedLanes } from './gamepad.js'
 
 // ── state ─────────────────────────────────────────────────────────────────────
 const pressed  = new Set()
@@ -13,6 +14,7 @@ let   audReady = false
 
 // ── init ──────────────────────────────────────────────────────────────────────
 initRenderer()
+initGamepad()
 
 initGame({
   onHit:   (lane, grade) => showFeedback(grade),
@@ -92,11 +94,24 @@ document.addEventListener('keyup', e => {
 
 // ── loop ──────────────────────────────────────────────────────────────────────
 function loop() {
+  // Poll gamepad input
+  pollGamepads(
+    (lane) => {
+      playHitSound(lane)
+      triggerLane(lane)
+    },
+    (lane) => {} // Release callback (not needed for gameplay)
+  )
+
   update()
   const now = performance.now()
   clearFrame()
   drawStatic()
-  drawButtons(pressed)
+
+  // Merge keyboard and gamepad pressed states for rendering
+  const allPressed = new Set([...pressed, ...getPressedLanes()])
+  drawButtons(allPressed)
+
   for (const dot of getDots()) drawNote(dot, now)
   requestAnimationFrame(loop)
 }

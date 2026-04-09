@@ -66,7 +66,7 @@ export function playHitSound(lane) {
   osc.frequency.value = freq
 
   const t = audioCtx.currentTime
-  gain.gain.setValueAtTime(0.18, t)
+  gain.gain.setValueAtTime(0.25, t)
   gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08)
 
   osc.start(t)

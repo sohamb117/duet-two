@@ -54,30 +54,34 @@ export function clearFrame(playing) {
   }
 }
 export function drawStatic() {
-  // hit ring — ellipse instead of circle
+  // hit ring — circle
   ctx.beginPath()
-  ctx.ellipse(CENTER.x, CENTER.y, X_RADIUS, Y_RADIUS, 0, 0, Math.PI * 2)
+  ctx.arc(CENTER.x, CENTER.y, 280, 0, Math.PI * 2)
   ctx.strokeStyle = 'rgba(255,255,255,0.08)'
   ctx.lineWidth   = 1.5
   ctx.stroke()
 
   // inner ring
   ctx.beginPath()
-  ctx.ellipse(CENTER.x, CENTER.y, 32, 20, 0, 0, Math.PI * 2)
+  ctx.arc(CENTER.x, CENTER.y, 28, 0, Math.PI * 2)
   ctx.strokeStyle = 'rgba(0,255,231,0.15)'
   ctx.lineWidth   = 1
   ctx.stroke()
 
-  // lane lines
+  // lane lines - draw from center circle to buttons
   for (let i = 0; i < NUM_LANES; i++) {
-    const a  = laneAngle(i)
-    const x0 = CENTER.x + Math.cos(a) * 34
-    const y0 = CENTER.y + Math.sin(a) * 20
     const { x: x1, y: y1 } = lanePos(i)
-    // shorten the line so it doesn't overlap the button
-    const dx = x1 - x0, dy = y1 - y0
+    // Calculate direction from center to button
+    const dx = x1 - CENTER.x
+    const dy = y1 - CENTER.y
     const len = Math.sqrt(dx*dx + dy*dy)
-    const nx = dx/len, ny = dy/len
+    const nx = dx/len
+    const ny = dy/len
+
+    // Start at edge of inner circle
+    const x0 = CENTER.x + nx * 30
+    const y0 = CENTER.y + ny * 30
+
     ctx.beginPath()
     ctx.moveTo(x0, y0)
     ctx.lineTo(x1 - nx*28, y1 - ny*28)
@@ -159,6 +163,9 @@ export function drawNote(dot, wallNow) {
     return
   }
 
+  // reactive circle - centered at origin, dot sits on the edge
+  drawReactiveCircle(x, y, color)
+
   // glow
   ctx.save()
   ctx.globalCompositeOperation = 'lighter'
@@ -187,6 +194,22 @@ function drawDot(x, y, color, size) {
   ctx.arc(x, y, size * 0.38, 0, Math.PI * 2)
   ctx.fillStyle = 'rgba(255,255,255,0.5)'
   ctx.fill()
+}
+
+function drawReactiveCircle(dotX, dotY, color) {
+  // Calculate distance from center to dot position
+  const dx = dotX - CENTER.x
+  const dy = dotY - CENTER.y
+  const radius = Math.sqrt(dx * dx + dy * dy)
+
+  // Draw circle centered at origin with radius equal to distance
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(CENTER.x, CENTER.y, radius, 0, Math.PI * 2)
+  ctx.strokeStyle = color + '30'  // 30 = ~18% opacity
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+  ctx.restore()
 }
 
 function drawHitBurst(x, y, color, t) {
