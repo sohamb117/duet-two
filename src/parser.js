@@ -27,7 +27,7 @@ export function parseOsu(content) {
       if (parts.length < 5) continue
       const x    = parseInt(parts[0])
       const time = parseFloat(parts[2]) / 1000
-      const lane = Math.min(5, Math.floor(x * 6 / 512))
+      const lane = Math.min(5, Math.round(x * 6 / 512))
       result.notes.push({ time, lane })
     }
   }

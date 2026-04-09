@@ -1,6 +1,6 @@
 const { ipcRenderer } = window.require('electron')
 import { parseOsu } from './parser.js'
-import { loadAudio, play, stop, setOffset, initAudio, isReady, playHitSound } from './audio.js'
+import { loadAudio, play, stop, setOffset, initAudio, isReady, playHitSound, loadHitSound } from './audio.js'
 import { initRenderer, clearFrame, drawStatic, drawButtons, drawNote } from './renderer.js'
 import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane } from './game.js'
 import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults } from './ui.js'
@@ -30,6 +30,33 @@ initUI({
   onRetry:     retry,
   onOffset:    ms => setOffset(ms),
 })
+
+// ── load hit sounds ───────────────────────────────────────────────────────
+async function loadHitSounds() {
+  initAudio()
+  const hitSoundFiles = [
+    '/hitsounds/lane0.wav',
+    '/hitsounds/lane1.wav',
+    '/hitsounds/lane2.wav',
+    '/hitsounds/lane3.wav',
+    '/hitsounds/lane4.wav',
+    '/hitsounds/lane5.wav',
+  ]
+
+  for (let i = 0; i < hitSoundFiles.length; i++) {
+    try {
+      const response = await fetch(hitSoundFiles[i])
+      const arrayBuffer = await response.arrayBuffer()
+      await loadHitSound(i, arrayBuffer)
+      console.log(`Loaded hit sound for lane ${i}`)
+    } catch (err) {
+      console.log(`No custom hit sound for lane ${i}, will use default beep`)
+    }
+  }
+}
+
+// Load hit sounds on startup
+loadHitSounds()
 
 // ── file loading ──────────────────────────────────────────────────────────────
 async function loadOsu() {
