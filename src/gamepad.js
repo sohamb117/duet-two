@@ -1,7 +1,7 @@
 // PS5 Standard Mapping Indices
 const BUTTON_TRIANGLE = 3  // Lane 0 (J)
 const BUTTON_CIRCLE   = 1  // Lane 1 (K)
-const BUTTON_SQUARE   = 2  // Lane 2 (L)
+const BUTTON_CROSS   = 0  // Lane 2 (L)
 const BUTTON_UP       = 12 // Lane 3 (D)
 const BUTTON_LEFT     = 14 // Lane 4 (S)
 const BUTTON_DOWN     = 13 // Lane 5 (A)
@@ -10,10 +10,10 @@ const BUTTON_DOWN     = 13 // Lane 5 (A)
 const BUTTON_TO_LANE = {
   [BUTTON_TRIANGLE]: 0,
   [BUTTON_CIRCLE]:   1,
-  [BUTTON_SQUARE]:   2,
-  [BUTTON_UP]:       3,
+  [BUTTON_CROSS]:   2,
+  [BUTTON_UP]:       5,
   [BUTTON_LEFT]:     4,
-  [BUTTON_DOWN]:     5,
+  [BUTTON_DOWN]:     3,
 }
 
 let lastButtonStates = {}
