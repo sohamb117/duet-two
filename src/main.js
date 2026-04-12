@@ -2,7 +2,7 @@ const { ipcRenderer } = window.require('electron')
 import { parseOsu } from './parser.js'
 import { loadAudio, play, stop, setOffset, initAudio, isReady, playHitSound, loadHitSound } from './audio.js'
 import { initRenderer, clearFrame, drawStatic, drawButtons, drawNote } from './renderer.js'
-import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane } from './game.js'
+import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane, setTravelTime } from './game.js'
 import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults } from './ui.js'
 import { initGamepad, pollGamepads, getPressedLanes } from './gamepad.js'
 
@@ -19,8 +19,9 @@ initGamepad()
 initGame({
   onHit:   (lane, grade) => showFeedback(grade),
   onMiss:  ()            => showFeedback('MISS'),
-  onScore: (score, combo) => updateScore(score, combo),
-  onEnd:   (score, max)  => showResults(score, max),
+  onScore: (score, combo, accuracy) => updateScore(score, combo, accuracy),
+  onEnd:   (score, max, accuracy)  => showResults(score, max, accuracy, 'WIN'),
+  onFail:  (score, max, accuracy)  => showResults(score, max, accuracy, 'FAILED'),
 })
 
 initUI({
@@ -29,6 +30,7 @@ initUI({
   onStart:     startRound,
   onRetry:     retry,
   onOffset:    ms => setOffset(ms),
+  onSpeed:     seconds => setTravelTime(seconds),
 })
 
 // ── load hit sounds ───────────────────────────────────────────────────────
@@ -58,28 +60,42 @@ async function loadHitSounds() {
 // Load hit sounds on startup
 loadHitSounds()
 
+// Auto-load game files on startup
+loadOsu()
+loadAudioFile()
+
 // ── file loading ──────────────────────────────────────────────────────────────
 async function loadOsu() {
-  const file = await ipcRenderer.invoke('open-osu')
-  if (!file) return
-  const map = parseOsu(file.content)
-  if (map.notes.length === 0) { setStatus('no hit objects found'); return }
-  loadMap(map)
-  setMapInfo(map.title, map.artist)
-  setStatus(map.notes.length + ' notes loaded')
-  mapReady = true
-  checkReady()
+  try {
+    setStatus('loading beatmap...')
+    const response = await fetch('assets/gamedata/natalia.osu')
+    const text = await response.text()
+    const map = parseOsu(text)
+    if (map.notes.length === 0) { setStatus('no hit objects found'); return }
+    loadMap(map)
+    setMapInfo(map.title, map.artist)
+    setStatus(map.notes.length + ' notes loaded')
+    mapReady = true
+    checkReady()
+  } catch (err) {
+    setStatus('error loading beatmap: ' + err.message)
+  }
 }
 
 async function loadAudioFile() {
-  initAudio()
-  const file = await ipcRenderer.invoke('open-audio')
-  if (!file) return
-  setStatus('decoding...')
-  await loadAudio(file.buffer)
-  setStatus('audio ready')
-  audReady = true
-  checkReady()
+  try {
+    initAudio()
+    setStatus('loading audio...')
+    const response = await fetch('assets/gamedata/natalia.mp3')
+    const arrayBuffer = await response.arrayBuffer()
+    setStatus('decoding...')
+    await loadAudio(arrayBuffer)
+    setStatus('audio ready')
+    audReady = true
+    checkReady()
+  } catch (err) {
+    setStatus('error loading audio: ' + err.message)
+  }
 }
 
 function checkReady() {
@@ -89,7 +105,7 @@ function checkReady() {
 // ── game flow ─────────────────────────────────────────────────────────────────
 function startRound() {
   showHUD()
-  updateScore(0, 0)
+  updateScore(0, 0, 100)
   play()
   startGame()
 }
@@ -97,9 +113,12 @@ function startRound() {
 function retry() {
   stop()
   showStartScreen()
+  mapReady = false
   audReady = false
   setStatus('')
   setStartEnabled(false)
+  loadOsu()
+  loadAudioFile()
 }
 
 // ── input ─────────────────────────────────────────────────────────────────────

@@ -23,14 +23,10 @@ function buildStartScreen() {
   const screen = el('div', 'screen start-screen', 'start-screen')
   screen.innerHTML = `
     <h1>RHYTHM</h1>
-    <div id="map-title">no map loaded</div>
+    <div id="map-title">loading...</div>
     <div id="map-artist"></div>
-    <div id="status-line"></div>
+    <div id="status-line">loading beatmap and audio...</div>
     <div class="row" style="margin-top:12px">
-      <button id="btn-osu">load .osu</button>
-      <button id="btn-audio">load audio</button>
-    </div>
-    <div class="row" style="margin-top:8px">
       <button id="btn-start" disabled>START</button>
     </div>
     <div class="offset-row">
@@ -47,8 +43,6 @@ function buildStartScreen() {
   `
   document.getElementById('app').appendChild(screen)
 
-  document.getElementById('btn-osu').addEventListener('click', onLoadOsu)
-  document.getElementById('btn-audio').addEventListener('click', onLoadAudio)
   document.getElementById('btn-start').addEventListener('click', onStart)
   document.getElementById('offset-slider').addEventListener('input', e => {
     const ms = parseInt(e.target.value)
@@ -68,22 +62,26 @@ function buildHUD() {
   hud.innerHTML = `
     <div id="score">0</div>
     <div id="combo"></div>
+    <div id="accuracy">100.0%</div>
     <div id="feedback"></div>
   `
   document.getElementById('app').appendChild(hud)
 }
 
 // ── Results screen ────────────────────────────────────────────────────────────
-function buildResultsScreen(score, maxCombo) {
+function buildResultsScreen(score, maxCombo, accuracy, resultType) {
   let screen = document.getElementById('results-screen')
   if (screen) screen.remove()
 
+  const resultColor = resultType === 'WIN' ? '#7cb4f5' : '#f57c7c'
+
   screen = el('div', 'screen results-screen', 'results-screen')
   screen.innerHTML = `
-    <h1>RESULT</h1>
+    <h1 style="color: ${resultColor}">${resultType}!</h1>
     <div id="map-title-result">${document.getElementById('map-title').textContent}</div>
     <div class="final-score">${score}</div>
     <div class="dim" style="letter-spacing:0.15em;font-size:11px">MAX COMBO ${maxCombo}</div>
+    <div class="dim" style="letter-spacing:0.15em;font-size:11px;margin-top:4px">ACCURACY ${accuracy.toFixed(1)}%</div>
     <button id="btn-retry" style="margin-top:20px">RETRY</button>
   `
   document.getElementById('app').appendChild(screen)
@@ -106,10 +104,22 @@ export function setStartEnabled(enabled) {
   document.getElementById('btn-start').disabled = !enabled
 }
 
-export function updateScore(score, combo) {
+export function updateScore(score, combo, accuracy) {
   document.getElementById('score').textContent = score
   const comboEl = document.getElementById('combo')
   comboEl.textContent = combo >= 4 ? `× ${combo} COMBO` : ''
+  if (accuracy !== undefined) {
+    const accuracyEl = document.getElementById('accuracy')
+    accuracyEl.textContent = accuracy.toFixed(1) + '%'
+    // Color based on accuracy
+    if (accuracy < 50) {
+      accuracyEl.style.color = '#f57c7c'
+    } else if (accuracy < 75) {
+      accuracyEl.style.color = '#f5e37c'
+    } else {
+      accuracyEl.style.color = '#7cb4f5'
+    }
+  }
 }
 
 export function showFeedback(grade) {
@@ -132,11 +142,13 @@ export function showStartScreen() {
 export function showHUD() {
   document.getElementById('start-screen').classList.add('hidden')
   document.getElementById('hud').classList.remove('hidden')
+  document.getElementById('accuracy').textContent = '100.0%'
+  document.getElementById('accuracy').style.color = '#7cb4f5'
 }
 
-export function showResults(score, maxCombo) {
+export function showResults(score, maxCombo, accuracy, resultType) {
   document.getElementById('hud').classList.add('hidden')
-  buildResultsScreen(score, maxCombo)
+  buildResultsScreen(score, maxCombo, accuracy, resultType)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -339,6 +351,14 @@ function injectStyles() {
       letter-spacing: 0.2em;
       min-height: 18px;
       margin-top: 4px;
+    }
+
+    #accuracy {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      min-height: 16px;
+      margin-top: 2px;
+      font-weight: bold;
     }
 
     #feedback {

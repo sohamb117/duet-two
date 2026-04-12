@@ -1,6 +1,6 @@
 import { songTime } from './audio.js'
 
-const TRAVEL_TIME       = 2.5
+var TRAVEL_TIME       = 2.5
 const HIT_WINDOW_PERFECT = 0.060
 const HIT_WINDOW_GOOD    = 0.120
 const MISS_WINDOW        = 0.150
@@ -16,22 +16,29 @@ let running    = false
 let score    = 0
 let combo    = 0
 let maxCombo = 0
+let totalNotes = 0
+let hitCount = 0
+let missCount = 0
+let failed = false
 
 // callbacks set by main
 let onHit     = () => {}
 let onMiss    = () => {}
 let onScore   = () => {}
 let onEnd     = () => {}
+let onFail    = () => {}
 
-export function initGame({ onHit: h, onMiss: m, onScore: s, onEnd: e }) {
+export function initGame({ onHit: h, onMiss: m, onScore: s, onEnd: e, onFail: f }) {
   onHit   = h || onHit
   onMiss  = m || onMiss
   onScore = s || onScore
   onEnd   = e || onEnd
+  onFail  = f || onFail
 }
 
 export function loadMap(map) {
   beatMap = map.notes
+  totalNotes = map.notes.length
 }
 
 export function startGame() {
@@ -40,6 +47,9 @@ export function startGame() {
   score     = 0
   combo     = 0
   maxCombo  = 0
+  hitCount  = 0
+  missCount = 0
+  failed    = false
   running   = true
 }
 
@@ -58,6 +68,10 @@ export function getDots() {
 export function getScore()    { return score }
 export function getCombo()    { return combo }
 export function getMaxCombo() { return maxCombo }
+export function getAccuracy() {
+  const total = hitCount + missCount
+  return total === 0 ? 100 : (hitCount / total) * 100
+}
 
 export function setTravelTime(seconds) {
   TRAVEL_TIME = seconds  
@@ -84,12 +98,13 @@ export function triggerLane(lane) {
     best.hitWall = performance.now()
     const grade  = bestDelta < HIT_WINDOW_PERFECT ? 'PERFECT' : 'GOOD'
     const pts    = grade === 'PERFECT' ? SCORE_PERFECT : SCORE_GOOD
+    hitCount++
     combo++
     if (combo > maxCombo) maxCombo = combo
     const mult = Math.min(4, 1 + Math.floor(combo / 10))
     score += pts * mult
     onHit(lane, grade)
-    onScore(score, combo)
+    onScore(score, combo, getAccuracy())
   }
 }
 
@@ -122,9 +137,18 @@ export function update() {
     if (!dot.hit && !dot.missed && now > dot.hitTime + MISS_WINDOW) {
       dot.missed   = true
       dot.missWall = wallNow
+      missCount++
       combo        = 0
       onMiss(dot.lane)
-      onScore(score, combo)
+      onScore(score, combo, getAccuracy())
+
+      // Check fail condition
+      const accuracy = getAccuracy()
+      if (accuracy < 50 && !failed) {
+        failed = true
+        running = false
+        onFail(score, maxCombo, accuracy)
+      }
     }
   }
 
@@ -136,8 +160,8 @@ export function update() {
   })
 
   // end condition
-  if (beatIndex >= beatMap.length && dots.length === 0) {
+  if (beatIndex >= beatMap.length && dots.length === 0 && !failed) {
     running = false
-    onEnd(score, maxCombo)
+    onEnd(score, maxCombo, getAccuracy())
   }
 }
