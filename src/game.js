@@ -144,7 +144,7 @@ export function update() {
 
       // Check fail condition
       const accuracy = getAccuracy()
-      if (accuracy < 50 && !failed) {
+      if (accuracy < 0 && !failed) {
         failed = true
         running = false
         onFail(score, maxCombo, accuracy)
