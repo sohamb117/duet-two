@@ -74,7 +74,7 @@ export function getAccuracy() {
 }
 
 export function setTravelTime(seconds) {
-  TRAVEL_TIME = seconds  
+  TRAVEL_TIME = 0.5 
 }
 
 
@@ -116,6 +116,7 @@ export function update() {
 
   // spawn
   while (beatIndex < beatMap.length) {
+    TRAVEL_TIME = 1.0
     const note = beatMap[beatIndex]
     if (note.time - now <= TRAVEL_TIME + 0.05) {
       dots.push({
@@ -144,7 +145,7 @@ export function update() {
 
       // Check fail condition
       const accuracy = getAccuracy()
-      if (accuracy < 0 && !failed) {
+      if (accuracy < 25 && !failed && (hitCount >= 10 || missCount >= 10)) {
         failed = true
         running = false
         onFail(score, maxCombo, accuracy)
