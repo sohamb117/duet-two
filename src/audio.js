@@ -1,6 +1,7 @@
 let audioCtx    = null
 let audioBuffer = null
 let audioSource = null
+let songGain    = null
 let startTime   = 0
 let offset      = 0
 
@@ -29,8 +30,8 @@ export function play() {
   audioSource.buffer = audioBuffer
 
   // Create gain node to control song volume
-  const songGain = audioCtx.createGain()
-  songGain.gain.value = 0.2  // Lower song volume (adjust as needed)
+  songGain = audioCtx.createGain()
+  songGain.gain.value = 0.2  // Default volume
 
   audioSource.connect(songGain)
   songGain.connect(audioCtx.destination)
@@ -51,6 +52,16 @@ export function songTime() {
 
 export function setOffset(ms) {
   offset = ms / 1000
+}
+
+export function setVolume(volume) {
+  if (songGain) {
+    songGain.gain.value = volume
+  }
+}
+
+export function getAudioDuration() {
+  return audioBuffer ? audioBuffer.duration : 0
 }
 
 export function isReady() {
