@@ -1,22 +1,22 @@
 const { ipcRenderer } = window.require('electron')
 import { parseOsu } from './parser.js'
-import { loadAudio, play, stop, setOffset, setVolume, initAudio, isReady, playHitSound, loadHitSound, songTime, getAudioDuration } from './audio.js'
+import { loadAudio, play, stop, setOffset, setVolume, initAudio, isReady, playHitSound, loadHitSound, songTime, getAudioDuration, setOnSongEnd } from './audio.js'
 import { initRenderer, clearFrame, drawStatic, drawButtons, drawNote } from './renderer.js'
-import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane } from './game.js'
-import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults, updateLevelInfo, updateProgressBar, showPasswordScreen, hidePasswordScreen, setPasswordError, applyBackgrounds } from './ui.js'
+import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane, setFreePlayMode, getRecordedBeats, loadRecordedBeats, endFreePlay } from './game.js'
+import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults, updateLevelInfo, updateProgressBar } from './ui.js'
 import { initGamepad, pollGamepads, getPressedLanes } from './gamepad.js'
-import { loadAllBackgrounds } from './decrypt.js'
+import './backgrounds.css'
 
 // ── state ─────────────────────────────────────────────────────────────────────
 const pressed  = new Set()
 const KEYS     = ['j','k','l','d','s','a']
 let   mapReady = false
 let   audReady = false
-let   backgroundsReady = false
 
 // ── level progression ─────────────────────────────────────────────────────────
-const TOTAL_LEVELS = 4
+const TOTAL_LEVELS = 3
 let   currentLevel = 0
+let   level1RecordedBeats = null  // Store beats recorded in level 1
 
 // ── init ──────────────────────────────────────────────────────────────────────
 initRenderer()
@@ -30,6 +30,17 @@ initGame({
   onFail:  (score, max, accuracy)  => showResults(score, max, accuracy, 'FAILED', currentLevel, TOTAL_LEVELS),
 })
 
+// Set up callback for when song ends
+setOnSongEnd(() => {
+  if (currentLevel === 1) {
+    // Level 1: end free-play recording
+    endFreePlay()
+  } else {
+    // Other levels: handled by game.js end condition
+    // This is just a safety fallback
+  }
+})
+
 initUI({
   onLoadOsu:   loadOsu,
   onLoadAudio: loadAudioFile,
@@ -38,42 +49,17 @@ initUI({
   onNextLevel: nextLevel,
   onOffset:    ms => setOffset(ms),
   onVolume:    volume => setVolume(volume),
-  onPasswordSubmit: handlePasswordSubmit,
 })
 
 // Update UI with initial level info
 updateLevelInfo(currentLevel, TOTAL_LEVELS)
 
-// ── password and background loading ───────────────────────────────────────────
-async function handlePasswordSubmit(password) {
-  try {
-    setPasswordError('')
-    console.log('Loading encrypted backgrounds...')
+// Show start screen on startup
+showStartScreen()
 
-    // Load and decrypt backgrounds
-    const backgrounds = await loadAllBackgrounds(password)
-
-    // Apply backgrounds to UI
-    applyBackgrounds(backgrounds)
-
-    // Hide password screen and show start screen
-    hidePasswordScreen()
-    showStartScreen()
-
-    backgroundsReady = true
-    console.log('Backgrounds loaded successfully!')
-
-    // Now load game files
-    loadOsu()
-    loadAudioFile()
-  } catch (err) {
-    console.error('Failed to load backgrounds:', err)
-    setPasswordError('Incorrect password or failed to decrypt backgrounds')
-  }
-}
-
-// Show password screen on startup
-showPasswordScreen()
+// Load game files
+loadOsu()
+loadAudioFile()
 
 // ── load hit sounds ───────────────────────────────────────────────────────
 async function loadHitSounds() {
@@ -104,9 +90,30 @@ loadHitSounds()
 
 // ── file loading ──────────────────────────────────────────────────────────────
 async function loadOsu() {
+  // Level 1 is free-play mode with no beatmap
+  if (currentLevel === 1) {
+    setFreePlayMode(true)
+    setMapInfo('Free Play', 'Practice Mode')
+    setStatus('press keys to record beats')
+    mapReady = true
+    checkReady()
+    return
+  }
+
+  // Level 2 uses recorded beats from level 1
+  if (currentLevel === 2 && level1RecordedBeats && level1RecordedBeats.length > 0) {
+    setStatus('loading your recorded beatmap...')
+    loadRecordedBeats(level1RecordedBeats)
+    setMapInfo('Your Recording', `${level1RecordedBeats.length} notes`)
+    setStatus('play back your beats!')
+    mapReady = true
+    checkReady()
+    return
+  }
+
   try {
     setStatus('loading beatmap...')
-    const response = await fetch(`assets/gamedata/level${currentLevel}/beatmap.osu`)
+    const response = await fetch(`/gamedata/level${currentLevel}/beatmap.osu`)
     const text = await response.text()
     const map = parseOsu(text)
     if (map.notes.length === 0) { setStatus('no hit objects found'); return }
@@ -124,7 +131,7 @@ async function loadAudioFile() {
   try {
     initAudio()
     setStatus('loading audio...')
-    const response = await fetch(`assets/gamedata/level${currentLevel}/audio.mp3`)
+    const response = await fetch(`/gamedata/level${currentLevel}/audio.mp3`)
     const arrayBuffer = await response.arrayBuffer()
     setStatus('decoding...')
     await loadAudio(arrayBuffer)
@@ -161,6 +168,12 @@ function retry() {
 
 function nextLevel() {
   if (currentLevel < TOTAL_LEVELS - 1) {
+    // If leaving level 1, save the recorded beats
+    if (currentLevel === 1) {
+      level1RecordedBeats = getRecordedBeats()
+      console.log(`Recorded ${level1RecordedBeats.length} beats from level 1`)
+    }
+
     currentLevel++
     updateLevelInfo(currentLevel, TOTAL_LEVELS)
     retry()
@@ -170,6 +183,7 @@ function nextLevel() {
 // ── input ─────────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.repeat) return
+
   const idx = KEYS.indexOf(e.key.toLowerCase())
   if (idx !== -1) {
     pressed.add(idx)

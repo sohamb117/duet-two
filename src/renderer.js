@@ -2,7 +2,7 @@ const NUM_LANES   = 6
 const CENTER      = { x: 400, y: 400 }
 const HIT_RADIUS  = 280
 const SPAWN_RADIUS= 12
-const LANE_COLORS = ['#AA0000','#AAAA00','#00AA00','#00AAAA','#0000AA','#AA00AA']
+const LANE_COLORS = ['#FF0000','#FFFF00','#00FF00','#99FFFF','#0099FF','#FF00FF']
 
 let canvas = null
 let ctx    = null
@@ -11,11 +11,7 @@ let ctx    = null
 
 export function initRenderer() {
   canvas = document.getElementById('game-canvas')
-  ctx    = canvas.getContext('2d')
-
-  // fill once so partial clear has something to blend against
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx    = canvas.getContext('2d', { alpha: true })
 }
 
 export function laneAngle(lane) {
@@ -26,30 +22,28 @@ const X_RADIUS = 340   // wider horizontally
 const Y_RADIUS = 200   // shorter vertically
 
 export function lanePos(lane) {
-  // 3 buttons on each side in offset columns
-  // Left side: lanes 5,4,3 (A,S,D) | Right side: lanes 0,1,2 (J,K,L)
+  // 6 buttons arranged in cardinal and intercardinal directions
+  const radius = 340
 
   const positions = {
-    // Right side (offset columns)
-    0: { x: CENTER.x + 320, y: CENTER.y - 140 },  // J - top right (inset)
-    1: { x: CENTER.x + 360, y: CENTER.y       },  // K - middle right (outset)
-    2: { x: CENTER.x + 320, y: CENTER.y + 140 },  // L - bottom right (inset)
-
-    // Left side (offset columns)
-    3: { x: CENTER.x - 320, y: CENTER.y + 140 },  // D - bottom left (inset)
-    4: { x: CENTER.x - 360, y: CENTER.y       },  // S - middle left (outset)
-    5: { x: CENTER.x - 320, y: CENTER.y - 140 },  // A - top left (inset)
+    0: { x: CENTER.x + radius * 0.707, y: CENTER.y - radius * 0.707 },  // J - Northeast
+    1: { x: CENTER.x + radius,       y: CENTER.y },          // K - East
+    2: { x: CENTER.x,                y: CENTER.y + radius },  // L - South
+    3: { x: CENTER.x,                y: CENTER.y - radius },  // D - North
+    4: { x: CENTER.x - radius * 0.707, y: CENTER.y - radius * 0.707 },  // S - Northwest
+    5: { x: CENTER.x - radius,       y: CENTER.y },          // A - West
   }
 
   return positions[lane]
 }
 
 export function clearFrame(playing) {
+  // Clear the canvas to show the CSS background
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  // Add a subtle black overlay during gameplay for trail effect
   if (playing) {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-  } else {
-    ctx.fillStyle = '#ffffff'
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.18)'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
 }
@@ -57,14 +51,14 @@ export function drawStatic() {
   // hit ring — circle
   ctx.beginPath()
   ctx.arc(CENTER.x, CENTER.y, 280, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)'
   ctx.lineWidth   = 1.5
   ctx.stroke()
 
   // inner ring
   ctx.beginPath()
   ctx.arc(CENTER.x, CENTER.y, 28, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(0,255,231,0.15)'
+  ctx.strokeStyle = 'rgba(0,255,231,0.4)'
   ctx.lineWidth   = 1
   ctx.stroke()
 
@@ -85,7 +79,7 @@ export function drawStatic() {
     ctx.beginPath()
     ctx.moveTo(x0, y0)
     ctx.lineTo(x1 - nx*28, y1 - ny*28)
-    ctx.strokeStyle = LANE_COLORS[i] + '18'
+    ctx.strokeStyle = LANE_COLORS[i] + '40'
     ctx.lineWidth   = 1
     ctx.stroke()
   }
@@ -116,7 +110,7 @@ export function drawButtons(pressedLanes = new Set()) {
     // button ring
     ctx.beginPath()
     ctx.arc(x, y, 22, 0, Math.PI * 2)
-    ctx.strokeStyle = pressed ? color : color + '66'
+    ctx.strokeStyle = pressed ? color : color + 'AA'
     ctx.lineWidth   = pressed ? 2.5 : 1.5
     ctx.stroke()
 
@@ -131,7 +125,7 @@ export function drawButtons(pressedLanes = new Set()) {
     ctx.font         = '11px "Share Tech Mono", monospace'
     ctx.textAlign    = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillStyle    = pressed ? color : color + '99'
+    ctx.fillStyle    = pressed ? color : color + 'DD'
     ctx.fillText(LANE_KEYS[i], x, y)
   }
 }
@@ -143,10 +137,18 @@ export function drawNote(dot, wallNow) {
   // Get target button position
   const targetPos = lanePos(dot.lane)
 
-  // Linear interpolation from center to button position
+  // Linear interpolation - reverse if dot.reverse is true
   const t = Math.min(progress, 1.0)
-  const x = CENTER.x + (targetPos.x - CENTER.x) * t
-  const y = CENTER.y + (targetPos.y - CENTER.y) * t
+  let x, y
+  if (dot.reverse) {
+    // Move from button position to center
+    x = targetPos.x + (CENTER.x - targetPos.x) * t
+    y = targetPos.y + (CENTER.y - targetPos.y) * t
+  } else {
+    // Move from center to button position (normal)
+    x = CENTER.x + (targetPos.x - CENTER.x) * t
+    y = CENTER.y + (targetPos.y - CENTER.y) * t
+  }
 
   const color = LANE_COLORS[dot.lane]
 
@@ -158,7 +160,7 @@ export function drawNote(dot, wallNow) {
   if (dot.missed) {
     const t = (wallNow - dot.missWall) / 500
     ctx.globalAlpha = Math.max(0, 1 - t)
-    drawDot(x, y, '#aaa', 9)
+    drawDot(x, y, '#888', 9)
     ctx.globalAlpha = 1
     return
   }
@@ -206,7 +208,7 @@ function drawReactiveCircle(dotX, dotY, color) {
   ctx.save()
   ctx.beginPath()
   ctx.arc(CENTER.x, CENTER.y, radius, 0, Math.PI * 2)
-  ctx.strokeStyle = color + '30'  // 30 = ~18% opacity
+  ctx.strokeStyle = color + '60'  // Brighter for dark theme
   ctx.lineWidth = 1.5
   ctx.stroke()
   ctx.restore()

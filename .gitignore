@@ -1,10 +1,2 @@
 node_modules/
 __pycache__/
-
-# Raw background images (not to be committed)
-assets/backgrounds/*.png
-assets/backgrounds/*.jpg
-assets/backgrounds/*.jpeg
-
-# Allow encrypted backgrounds
-!assets/backgrounds/*.encrypted

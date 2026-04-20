@@ -12,6 +12,7 @@ let beatMap    = []
 let beatIndex  = 0
 let dots       = []
 let running    = false
+let freePlayMode = false
 
 let score    = 0
 let combo    = 0
@@ -20,6 +21,10 @@ let totalNotes = 0
 let hitCount = 0
 let missCount = 0
 let failed = false
+
+// Recording for free-play mode
+let recordedBeats = []
+let recordingStartTime = 0
 
 // callbacks set by main
 let onHit     = () => {}
@@ -39,6 +44,31 @@ export function initGame({ onHit: h, onMiss: m, onScore: s, onEnd: e, onFail: f 
 export function loadMap(map) {
   beatMap = map.notes
   totalNotes = map.notes.length
+  freePlayMode = false
+}
+
+export function setFreePlayMode(enabled) {
+  freePlayMode = enabled
+  beatMap = []
+  totalNotes = 0
+}
+
+export function getRecordedBeats() {
+  return recordedBeats
+}
+
+export function loadRecordedBeats(beats) {
+  beatMap = beats.map(b => ({ lane: b.lane, time: b.time }))
+  totalNotes = beatMap.length
+  freePlayMode = false
+}
+
+export function endFreePlay() {
+  if (freePlayMode && running) {
+    running = false
+    console.log(`Recording ended with ${recordedBeats.length} beats`)
+    onEnd(0, 0, 100)  // End with dummy stats
+  }
 }
 
 export function startGame() {
@@ -51,6 +81,12 @@ export function startGame() {
   missCount = 0
   failed    = false
   running   = true
+
+  // Start recording in free-play mode
+  if (freePlayMode) {
+    recordedBeats = []
+    recordingStartTime = songTime()
+  }
 }
 
 export function stopGame() {
@@ -80,6 +116,31 @@ export function setTravelTime(seconds) {
 
 export function triggerLane(lane) {
   if (!running) return
+
+  // In free-play mode, spawn a reverse dot on input and record the beat
+  if (freePlayMode) {
+    const wallNow = performance.now()
+    const currentTime = songTime()
+
+    // Record the beat (time relative to start)
+    recordedBeats.push({
+      lane: lane,
+      time: currentTime - recordingStartTime
+    })
+
+    dots.push({
+      lane:       lane,
+      hitTime:    0,  // not used in free-play
+      spawnWall:  wallNow,
+      travelTime: 1.0,
+      hit:        false,
+      missed:     false,
+      hitWall:    null,
+      missWall:   null,
+      reverse:    true,  // moves from endpoint to center
+    })
+    return
+  }
 
   const now = songTime()
   let best = null, bestDelta = Infinity
@@ -114,6 +175,16 @@ export function update() {
   const now     = songTime()
   const wallNow = performance.now()
 
+  // In free-play mode, just cull old dots
+  if (freePlayMode) {
+    // cull dots that have completed their travel
+    dots = dots.filter(d => {
+      const elapsed = (wallNow - d.spawnWall) / 1000
+      return elapsed < d.travelTime + 0.5  // keep for a bit after reaching center
+    })
+    return
+  }
+
   // spawn
   while (beatIndex < beatMap.length) {
     TRAVEL_TIME = 1.0
@@ -128,6 +199,7 @@ export function update() {
         missed:     false,
         hitWall:    null,
         missWall:   null,
+        reverse:    false,
       })
       beatIndex++
     } else break
@@ -145,7 +217,7 @@ export function update() {
 
       // Check fail condition
       const accuracy = getAccuracy()
-      if (accuracy < 25 && !failed && (hitCount >= 10 || missCount >= 10)) {
+      if (accuracy < 0 && !failed && (hitCount >= 10 || missCount >= 10)) {
         failed = true
         running = false
         onFail(score, maxCombo, accuracy)

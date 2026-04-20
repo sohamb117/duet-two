@@ -5,10 +5,9 @@ let onRetry     = () => {}
 let onNextLevel = () => {}
 let onOffset    = () => {}
 let onVolume    = () => {}
-let onPasswordSubmit = () => {}
 
 let currentLevel = 0
-let totalLevels  = 4
+let totalLevels  = 3
 
 export function initUI(callbacks) {
   onLoadOsu   = callbacks.onLoadOsu   || onLoadOsu
@@ -18,10 +17,8 @@ export function initUI(callbacks) {
   onNextLevel = callbacks.onNextLevel || onNextLevel
   onOffset    = callbacks.onOffset    || onOffset
   onVolume    = callbacks.onVolume    || onVolume
-  onPasswordSubmit = callbacks.onPasswordSubmit || onPasswordSubmit
 
   injectStyles()
-  buildPasswordScreen()
   buildStartScreen()
   buildHUD()
 }
@@ -70,95 +67,14 @@ export function updateProgressBar(currentTime, duration) {
   }
 }
 
-// ── Password screen ───────────────────────────────────────────────────────────
-function buildPasswordScreen() {
-  const screen = el('div', 'screen password-screen', 'password-screen')
-  screen.innerHTML = `
-    <h1>RHYTHM</h1>
-    <div class="password-prompt">
-      <p class="dim" style="margin-bottom: 16px; letter-spacing: 0.1em; font-size: 11px;">ENTER PASSWORD TO DECRYPT BACKGROUNDS</p>
-      <input type="password" id="password-input" placeholder="password" autocomplete="off">
-      <div id="password-error" class="password-error"></div>
-      <button id="btn-password-submit">UNLOCK</button>
-    </div>
-  `
-  document.getElementById('app').appendChild(screen)
-
-  const input = document.getElementById('password-input')
-  const button = document.getElementById('btn-password-submit')
-
-  button.addEventListener('click', () => {
-    const password = input.value
-    if (password) {
-      button.disabled = true
-      button.textContent = 'DECRYPTING...'
-      onPasswordSubmit(password)
-      // Note: button will be re-enabled if password is wrong
-      setTimeout(() => {
-        button.disabled = false
-        button.textContent = 'UNLOCK'
-      }, 2000)
-    }
-  })
-
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      button.click()
-    }
-  })
-}
-
-export function showPasswordScreen() {
-  const screen = document.getElementById('password-screen')
-  if (screen) {
-    screen.classList.remove('hidden')
-    // Focus the input after a short delay
-    setTimeout(() => {
-      document.getElementById('password-input').focus()
-    }, 100)
-  }
-}
-
-export function hidePasswordScreen() {
-  const screen = document.getElementById('password-screen')
-  if (screen) {
-    screen.classList.add('hidden')
-  }
-}
-
-export function setPasswordError(msg) {
-  const errorEl = document.getElementById('password-error')
-  if (errorEl) {
-    errorEl.textContent = msg
-  }
-}
-
 // ── Background management ─────────────────────────────────────────────────────
-let backgrounds = null
-
-export function applyBackgrounds(backgroundsData) {
-  backgrounds = backgroundsData
-  updateBackgroundForLevel(currentLevel)
-}
-
 function updateBackgroundForLevel(level) {
-  if (!backgrounds) return
+  // Remove all level classes from body
+  document.body.classList.remove('level-0', 'level-1', 'level-2')
 
-  const app = document.getElementById('app')
-
-  // Only apply backgrounds for levels 1 and 2
-  if (level === 1 && backgrounds.natalia_bg) {
-    app.style.backgroundImage = `url(${backgrounds.natalia_bg})`
-    app.style.backgroundSize = 'cover'
-    app.style.backgroundPosition = 'center'
-  } else if (level === 2 && backgrounds.tally_bg) {
-    app.style.backgroundImage = `url(${backgrounds.tally_bg})`
-    app.style.backgroundSize = 'cover'
-    app.style.backgroundPosition = 'center'
-  } else {
-    // Levels 0 and 3 have no background
-    app.style.backgroundImage = 'none'
-  }
+  // Add the current level class to body
+  document.body.classList.add(`level-${level}`)
+  console.log(`Background updated to level-${level}, body classes:`, document.body.classList.toString())
 }
 
 // ── Start screen ──────────────────────────────────────────────────────────────
@@ -168,8 +84,8 @@ function buildStartScreen() {
     <div id="progress-bar">
       <div id="progress-bar-fill"></div>
     </div>
-    <h1>RHYTHM</h1>
-    <div id="level-display">LEVEL 1 / 4</div>
+    <h1>DUET #2: RHYTHM</h1>
+    <div id="level-display">LEVEL 1 / 3</div>
     <div id="map-title">loading...</div>
     <div id="map-artist"></div>
     <div id="status-line">loading beatmap and audio...</div>
@@ -211,6 +127,7 @@ function buildHUD() {
       <div id="progress-bar-fill-hud"></div>
     </div>
     <div id="hud-level">LEVEL 1</div>
+    <div id="hud-hint" class="hud-hint"></div>
     <div id="score">0</div>
     <div id="combo"></div>
     <div id="accuracy">100.0%</div>
@@ -326,6 +243,12 @@ export function showHUD() {
   if (hudLevel) {
     hudLevel.textContent = `LEVEL ${currentLevel + 1}`
   }
+
+  // Hide hint
+  const hudHint = document.getElementById('hud-hint')
+  if (hudHint) {
+    hudHint.style.display = 'none'
+  }
 }
 
 export function showResults(score, maxCombo, accuracy, resultType, level, total) {
@@ -347,10 +270,10 @@ function injectStyles() {
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap');
 
     :root {
-      --bg:      #ffffff;
-      --accent:  #000000;
-      --accent3: #000000;
-      --red:     #000000;
+      --bg:      #000000;
+      --accent:  #ffffff;
+      --accent3: #ffffff;
+      --red:     #ff4444;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -386,7 +309,7 @@ function injectStyles() {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.92);
+      background: rgba(0,0,0,0.92);
       z-index: 20;
       gap: 8px;
     }
@@ -402,7 +325,7 @@ function injectStyles() {
 
     #level-display, #result-level-display {
       font-size: 11px;
-      color: rgba(0,0,0,0.6);
+      color: rgba(255,255,255,0.8);
       letter-spacing: 0.15em;
       margin-bottom: 6px;
       font-weight: bold;
@@ -410,20 +333,20 @@ function injectStyles() {
 
     #map-title, #map-title-result {
       font-size: 13px;
-      color: rgba(0,0,0,0.7);
+      color: rgba(255,255,255,0.9);
       letter-spacing: 0.12em;
     }
 
     #map-artist {
       font-size: 11px;
-      color: rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.7);
       letter-spacing: 0.1em;
       min-height: 16px;
     }
 
     #status-line {
       font-size: 10px;
-      color: rgba(0,0,0,0.4);
+      color: rgba(255,255,255,0.6);
       letter-spacing: 0.1em;
       min-height: 14px;
     }
@@ -465,13 +388,13 @@ function injectStyles() {
       letter-spacing: 0.1em;
     }
 
-    .dim { color: rgba(0,0,0,0.5); }
+    .dim { color: rgba(255,255,255,0.6); }
 
     #offset-slider, #volume-slider {
       -webkit-appearance: none;
       width: 140px;
       height: 2px;
-      background: rgba(0,0,0,0.2);
+      background: rgba(255,255,255,0.3);
       outline: none;
     }
 
@@ -488,69 +411,18 @@ function injectStyles() {
 
     .key-legend {
       font-size: 11px;
-      color: rgba(0,0,0,0.4);
+      color: rgba(255,255,255,0.6);
       letter-spacing: 0.12em;
       margin-top: 4px;
     }
 
-    /* ── Password screen ── */
-    .password-screen {
-      background: rgba(255,255,255,0.98);
-    }
-
-    .password-prompt {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-
-    #password-input {
-      width: 280px;
-      padding: 10px 16px;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 14px;
-      letter-spacing: 0.1em;
-      text-align: center;
-      border: 1px solid var(--accent);
-      background: transparent;
-      color: var(--accent);
-      outline: none;
-    }
-
-    #password-input::placeholder {
-      color: rgba(0,0,0,0.3);
-      letter-spacing: 0.1em;
-    }
-
-    #password-input:focus {
-      box-shadow: 0 0 8px rgba(0,0,0,0.2);
-    }
-
-    .password-error {
-      font-size: 10px;
-      color: #f57c7c;
-      letter-spacing: 0.1em;
-      min-height: 14px;
-      text-align: center;
-    }
-
     /* ── Progress bars ── */
     #progress-bar, #progress-bar-hud {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: rgba(0,0,0,0.1);
-      z-index: 30;
+      display: none;
     }
 
     #progress-bar-fill, #progress-bar-fill-hud {
-      height: 100%;
-      background: var(--accent);
-      transition: width 0.3s ease;
-      width: 0%;
+      display: none;
     }
 
     .next-level-btn {
@@ -579,16 +451,28 @@ function injectStyles() {
       left: 50%;
       transform: translateX(-50%);
       font-size: 10px;
-      color: rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.7);
       letter-spacing: 0.15em;
       font-weight: bold;
+    }
+
+    .hud-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.15em;
+      font-weight: bold;
+      display: none;
     }
 
     #score {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 52px;
       letter-spacing: 0.12em;
-      color: black;
+      color: white;
       text-shadow: none;
       line-height: 1;
     }

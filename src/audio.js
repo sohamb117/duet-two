@@ -4,6 +4,7 @@ let audioSource = null
 let songGain    = null
 let startTime   = 0
 let offset      = 0
+let onSongEnd   = () => {}
 
 // Hit sound buffers for each lane
 let hitSoundBuffers = [null, null, null, null, null, null]
@@ -28,6 +29,11 @@ export function play() {
 
   audioSource = audioCtx.createBufferSource()
   audioSource.buffer = audioBuffer
+
+  // Set up callback for when song ends
+  audioSource.onended = () => {
+    onSongEnd()
+  }
 
   // Create gain node to control song volume
   songGain = audioCtx.createGain()
@@ -76,6 +82,10 @@ const HIT_SOUNDS = [
   { freq: 680, type: 'sine' },
   { freq: 740, type: 'sine' },
 ]
+
+export function setOnSongEnd(callback) {
+  onSongEnd = callback
+}
 
 export function playHitSound(lane) {
   if (!audioCtx) return

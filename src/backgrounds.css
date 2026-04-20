@@ -1,0 +1,13 @@
+/* Background image classes using public directory paths */
+body.level-0 {
+  background-color: #000000;
+  background-image: none;
+}
+
+body.level-1 {
+  background: url(/backgrounds/natalia_bg.jpg) center top / 120% no-repeat;
+}
+
+body.level-2 {
+  background: url(/backgrounds/tally_bg.jpg) center top / 120% no-repeat;
+}
