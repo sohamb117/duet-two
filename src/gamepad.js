@@ -2,9 +2,9 @@
 const BUTTON_TRIANGLE = 3  // Lane 0 (J)
 const BUTTON_CIRCLE   = 1  // Lane 1 (K)
 const BUTTON_CROSS   = 0  // Lane 2 (L)
-const BUTTON_UP       = 12 // Lane 3 (D)
+const BUTTON_UP       = 13 // Lane 3 (D)
 const BUTTON_LEFT     = 14 // Lane 4 (S)
-const BUTTON_DOWN     = 13 // Lane 5 (A)
+const BUTTON_DOWN     = 12 // Lane 5 (A)
 
 // Updated Map: Button indices to Lane numbers
 const BUTTON_TO_LANE = {

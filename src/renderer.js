@@ -85,7 +85,7 @@ export function drawStatic() {
   }
 }
 
-const LANE_KEYS = ['J','K','L','D','S','A']
+const LANE_KEYS = ['J','K','L','A','S','D']
 
 export function drawButtons(pressedLanes = new Set()) {
   for (let i = 0; i < NUM_LANES; i++) {
