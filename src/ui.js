@@ -132,6 +132,8 @@ function buildHUD() {
     <div id="combo"></div>
     <div id="accuracy">100.0%</div>
     <div id="feedback"></div>
+    <div id="die-flash" class="die-flash">DIE</div>
+    <div id="die-overlay" class="die-overlay"></div>
   `
   document.getElementById('app').appendChild(hud)
 }
@@ -192,21 +194,32 @@ export function setStartEnabled(enabled) {
 }
 
 export function updateScore(score, combo, accuracy) {
-  document.getElementById('score').textContent = score
-  const comboEl = document.getElementById('combo')
-  comboEl.textContent = combo >= 4 ? `× ${combo} COMBO` : ''
-  if (accuracy !== undefined) {
-    const accuracyEl = document.getElementById('accuracy')
-    accuracyEl.textContent = accuracy.toFixed(1) + '%'
-    // Color based on accuracy
-    if (accuracy < 50) {
-      accuracyEl.style.color = '#f57c7c'
-    } else if (accuracy < 75) {
-      accuracyEl.style.color = '#f5e37c'
-    } else {
-      accuracyEl.style.color = '#7cb4f5'
+  // Hide score and accuracy on level 1 (index 1)
+  const scoreEl = document.getElementById('score')
+  const accuracyEl = document.getElementById('accuracy')
+
+  if (currentLevel === 1) {
+    scoreEl.style.display = 'none'
+    accuracyEl.style.display = 'none'
+  } else {
+    scoreEl.style.display = 'block'
+    accuracyEl.style.display = 'block'
+    scoreEl.textContent = score
+    if (accuracy !== undefined) {
+      accuracyEl.textContent = accuracy.toFixed(1) + '%'
+      // Color based on accuracy
+      if (accuracy < 50) {
+        accuracyEl.style.color = '#f57c7c'
+      } else if (accuracy < 75) {
+        accuracyEl.style.color = '#f5e37c'
+      } else {
+        accuracyEl.style.color = '#7cb4f5'
+      }
     }
   }
+
+  const comboEl = document.getElementById('combo')
+  comboEl.textContent = combo >= 4 ? `× ${combo} COMBO` : ''
 }
 
 export function showFeedback(grade) {
@@ -254,6 +267,29 @@ export function showHUD() {
 export function showResults(score, maxCombo, accuracy, resultType, level, total) {
   document.getElementById('hud').classList.add('hidden')
   buildResultsScreen(score, maxCombo, accuracy, resultType, level, total)
+}
+
+export function triggerDieFlash() {
+  const dieEl = document.getElementById('die-flash')
+  const overlayEl = document.getElementById('die-overlay')
+
+  if (dieEl && overlayEl) {
+    // Flash the text
+    dieEl.classList.remove('flash')
+    void dieEl.offsetWidth
+    dieEl.classList.add('flash')
+
+    // Flash the black overlay
+    overlayEl.classList.remove('flash')
+    void overlayEl.offsetWidth
+    overlayEl.classList.add('flash')
+
+    // Remove classes after animation completes
+    setTimeout(() => {
+      dieEl.classList.remove('flash')
+      overlayEl.classList.remove('flash')
+    }, 200)
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -509,6 +545,51 @@ function injectStyles() {
       text-shadow: none;
       letter-spacing: 0.1em;
       line-height: 1;
+    }
+
+    .die-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    .die-overlay.flash {
+      animation: flashOverlay 0.2s ease-in;
+    }
+
+    .die-flash {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 120px;
+      color: #ff0000;
+      text-shadow: 0 0 20px #ff0000;
+      letter-spacing: 0.2em;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .die-flash.flash {
+      animation: flashDie 0.2s ease-in;
+    }
+
+    @keyframes flashOverlay {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes flashDie {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
     }
   `
   document.head.appendChild(style)

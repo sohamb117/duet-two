@@ -3,7 +3,7 @@ import { parseOsu } from './parser.js'
 import { loadAudio, play, stop, setOffset, setVolume, initAudio, isReady, playHitSound, loadHitSound, songTime, getAudioDuration, setOnSongEnd } from './audio.js'
 import { initRenderer, clearFrame, drawStatic, drawButtons, drawNote } from './renderer.js'
 import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane, setFreePlayMode, getRecordedBeats, loadRecordedBeats, endFreePlay } from './game.js'
-import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults, updateLevelInfo, updateProgressBar } from './ui.js'
+import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults, updateLevelInfo, updateProgressBar, triggerDieFlash } from './ui.js'
 import { initGamepad, pollGamepads, getPressedLanes } from './gamepad.js'
 import './backgrounds.css'
 
@@ -15,8 +15,9 @@ let   audReady = false
 
 // ── level progression ─────────────────────────────────────────────────────────
 const TOTAL_LEVELS = 3
-let   currentLevel = 1
+let   currentLevel = 2
 let   level1RecordedBeats = null  // Store beats recorded in level 1
+let   dieFlashTriggered = false   // Track if DIE flash has been shown
 
 // ── init ──────────────────────────────────────────────────────────────────────
 initRenderer()
@@ -153,6 +154,7 @@ function startRound() {
   updateScore(0, 0, 100)
   play()
   startGame()
+  dieFlashTriggered = false  // Reset flash trigger for new round
 }
 
 function retry() {
@@ -225,6 +227,12 @@ function loop() {
   const duration = getAudioDuration()
   if (duration > 0) {
     updateProgressBar(currentTime, duration)
+
+    // Trigger DIE flash on level 2 (index 2) when 5 seconds remain
+    if (currentLevel === 2 && !dieFlashTriggered && duration - currentTime <= 5 && duration - currentTime > 4.5) {
+      triggerDieFlash()
+      dieFlashTriggered = true
+    }
   }
 
   requestAnimationFrame(loop)
