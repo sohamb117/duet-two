@@ -1,5 +1,5 @@
 const NUM_LANES   = 6
-const CENTER      = { x: 400, y: 400 }
+const CENTER      = { x: 450, y: 397 }
 const HIT_RADIUS  = 280
 const SPAWN_RADIUS= 12
 const LANE_COLORS = ['#FF0000','#FFFF00','#00FF00','#99FFFF','#0099FF','#FF00FF']

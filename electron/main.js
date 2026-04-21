@@ -5,7 +5,7 @@ const fs = require('fs')
 function createWindow() {
   const win = new BrowserWindow({
     width: 900,
-    height: 900,
+    height: 795,
     backgroundColor: '#0a0a0f',
     webPreferences: {
       nodeIntegration: true,

@@ -15,7 +15,7 @@ let   audReady = false
 
 // ── level progression ─────────────────────────────────────────────────────────
 const TOTAL_LEVELS = 3
-let   currentLevel = 0
+let   currentLevel = 1
 let   level1RecordedBeats = null  // Store beats recorded in level 1
 
 // ── init ──────────────────────────────────────────────────────────────────────
