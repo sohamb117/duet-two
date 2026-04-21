@@ -15,7 +15,7 @@ let   audReady = false
 
 // ── level progression ─────────────────────────────────────────────────────────
 const TOTAL_LEVELS = 3
-let   currentLevel = 2
+let   currentLevel = 0
 let   level1RecordedBeats = null  // Store beats recorded in level 1
 let   dieFlashTriggered = false   // Track if DIE flash has been shown
 
