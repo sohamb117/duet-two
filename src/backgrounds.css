@@ -11,3 +11,32 @@ body.level-1 {
 body.level-2 {
   background: url(/backgrounds/tally_bg.jpg) center calc(50% - 100px) / contain no-repeat;
 }
+
+html.inverted body.level-1::before,
+html.inverted body.level-2::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-position: inherit;
+  background-size: inherit;
+  background-repeat: inherit;
+  filter: invert(1);
+  z-index: -1;
+}
+
+html.inverted body.level-1::before {
+  background-image: url(/backgrounds/natalia_bg.jpg);
+  background-position: calc(50% - 15px) calc(50% - 100px);
+  background-size: contain;
+}
+
+html.inverted body.level-2::before {
+  background-image: url(/backgrounds/tally_bg.jpg);
+  background-position: center calc(50% - 100px);
+  background-size: contain;
+}
+
+html.inverted body.level-1,
+html.inverted body.level-2 {
+  background-image: none;
+}

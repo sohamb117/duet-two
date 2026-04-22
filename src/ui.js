@@ -8,6 +8,7 @@ let onVolume    = () => {}
 
 let currentLevel = 0
 let totalLevels  = 3
+let colorInverted = false
 
 export function initUI(callbacks) {
   onLoadOsu   = callbacks.onLoadOsu   || onLoadOsu
@@ -102,6 +103,13 @@ function buildStartScreen() {
       <input type="range" id="volume-slider" min="0" max="100" step="1" value="20">
       <span id="volume-val">20%</span>
     </div>
+    <div class="offset-row">
+      <span class="dim">INVERT COLORS</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="invert-toggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
     <div class="key-legend">A &nbsp;|&nbsp; S &nbsp;|&nbsp; D &nbsp;|&nbsp; J &nbsp;|&nbsp; K &nbsp;|&nbsp; L</div>
   `
   document.getElementById('app').appendChild(screen)
@@ -116,6 +124,10 @@ function buildStartScreen() {
     const val = parseInt(e.target.value)
     document.getElementById('volume-val').textContent = val + '%'
     onVolume(val / 100)
+  })
+  document.getElementById('invert-toggle').addEventListener('change', e => {
+    colorInverted = e.target.checked
+    applyColorInversion(colorInverted)
   })
 }
 
@@ -292,6 +304,17 @@ export function triggerDieFlash() {
   }
 }
 
+// ── Color Inversion ───────────────────────────────────────────────────────────
+function applyColorInversion(inverted) {
+  if (inverted) {
+    document.documentElement.style.filter = 'invert(1)'
+    document.documentElement.classList.add('inverted')
+  } else {
+    document.documentElement.style.filter = ''
+    document.documentElement.classList.remove('inverted')
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function el(tag, className, id) {
   const e = document.createElement(tag)
@@ -335,6 +358,10 @@ function injectStyles() {
     #game-canvas {
       position: absolute;
       inset: 0;
+    }
+
+    html.inverted #game-canvas {
+      filter: invert(1);
     }
 
     /* ── screens ── */
@@ -445,6 +472,56 @@ function injectStyles() {
 
     #offset-val, #volume-val { color: var(--accent); width: 44px; }
 
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+      filter: invert(0) !important;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255,255,255,0.3);
+      transition: .3s;
+      border-radius: 20px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    button {
+      filter: invert(0) !important;
+    }
+
     .key-legend {
       font-size: 11px;
       color: rgba(255,255,255,0.6);
@@ -483,11 +560,11 @@ function injectStyles() {
 
     #hud-level {
       position: absolute;
-      top: 12px;
+      top: -20px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 10px;
-      color: rgba(255,255,255,0.7);
+      font-size: 16px;
+      color: rgba(255,255,255,0.9);
       letter-spacing: 0.15em;
       font-weight: bold;
     }
@@ -538,6 +615,13 @@ function injectStyles() {
       transition: opacity 0.15s;
     }
 
+    html.inverted #score,
+    html.inverted #combo,
+    html.inverted #accuracy,
+    html.inverted #feedback {
+      filter: invert(1);
+    }
+
     .final-score {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 80px;
@@ -580,6 +664,11 @@ function injectStyles() {
 
     .die-flash.flash {
       animation: flashDie 0.2s ease-in;
+    }
+
+    html.inverted .die-overlay,
+    html.inverted .die-flash {
+      filter: invert(1);
     }
 
     @keyframes flashOverlay {

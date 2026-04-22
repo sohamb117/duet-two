@@ -93,36 +93,37 @@ export function drawButtons(pressedLanes = new Set()) {
     const color     = LANE_COLORS[i]
     const pressed   = pressedLanes.has(i)
 
-    // glow behind button when pressed
+    // glow behind button when pressed (50% larger: 36 * 1.5 = 54)
     if (pressed) {
       ctx.save()
       ctx.globalCompositeOperation = 'lighter'
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, 36)
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, 54)
       glow.addColorStop(0, color + '88')
       glow.addColorStop(1, color + '00')
       ctx.beginPath()
-      ctx.arc(x, y, 36, 0, Math.PI * 2)
+      ctx.arc(x, y, 54, 0, Math.PI * 2)
       ctx.fillStyle = glow
       ctx.fill()
       ctx.restore()
     }
 
-    // button ring
+    // button ring (50% larger: 22 * 1.5 = 33)
     ctx.beginPath()
-    ctx.arc(x, y, 22, 0, Math.PI * 2)
+    ctx.arc(x, y, 33, 0, Math.PI * 2)
     ctx.strokeStyle = pressed ? color : color + 'AA'
-    ctx.lineWidth   = pressed ? 2.5 : 1.5
+    ctx.lineWidth   = pressed ? 3.75 : 2.25
     ctx.stroke()
 
     // fill when pressed
     if (pressed) {
       ctx.beginPath()
-      ctx.arc(x, y, 22, 0, Math.PI * 2)
+      ctx.arc(x, y, 33, 0, Math.PI * 2)
       ctx.fillStyle = color + '33'
       ctx.fill()
     }
 
-    ctx.font         = '11px "Share Tech Mono", monospace'
+    // label text (50% larger: 11px * 1.5 = 16.5px)
+    ctx.font         = '16.5px "Share Tech Mono", monospace'
     ctx.textAlign    = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle    = pressed ? color : color + 'DD'
@@ -160,7 +161,7 @@ export function drawNote(dot, wallNow) {
   if (dot.missed) {
     const t = (wallNow - dot.missWall) / 500
     ctx.globalAlpha = Math.max(0, 1 - t)
-    drawDot(x, y, '#888', 9)
+    drawDot(x, y, '#888', 13.5)  // 50% larger: 9 * 1.5 = 13.5
     ctx.globalAlpha = 1
     return
   }
@@ -168,11 +169,11 @@ export function drawNote(dot, wallNow) {
   // reactive circle - centered at origin, dot sits on the edge
   drawReactiveCircle(x, y, color)
 
-  // glow
+  // glow (50% larger: 24 * 1.5 = 36, 10 * 1.5 = 15)
   ctx.save()
   ctx.globalCompositeOperation = 'lighter'
   const nearness = Math.max(0, progress - 0.7) / 0.3
-  const glowR    = 24 + nearness * 10
+  const glowR    = 36 + nearness * 15
   const grad     = ctx.createRadialGradient(x, y, 0, x, y, glowR)
   grad.addColorStop(0, color + '99')
   grad.addColorStop(1, color + '00')
@@ -182,8 +183,8 @@ export function drawNote(dot, wallNow) {
   ctx.fill()
   ctx.restore()
 
-  // core dot
-  drawDot(x, y, color, 9 + nearness * 3)
+  // core dot (50% larger: 9 * 1.5 = 13.5, 3 * 1.5 = 4.5)
+  drawDot(x, y, color, 13.5 + nearness * 4.5)
 }
 
 function drawDot(x, y, color, size) {
@@ -219,13 +220,13 @@ function drawHitBurst(x, y, color, t) {
   ctx.globalCompositeOperation = 'lighter'
   for (let i = 0; i < 3; i++) {
     const rt    = Math.min(1, t + i * 0.1)
-    const r     = 14 + rt * 44
+    const r     = 21 + rt * 66  // 50% larger: 14 * 1.5 = 21, 44 * 1.5 = 66
     const alpha = Math.max(0, 1 - rt * 1.3)
     ctx.beginPath()
     ctx.arc(x, y, r, 0, Math.PI * 2)
     ctx.strokeStyle = color
     ctx.globalAlpha = alpha
-    ctx.lineWidth   = Math.max(0.1, 2.5 - rt * 2)
+    ctx.lineWidth   = Math.max(0.1, 3.75 - rt * 3)  // 50% larger: 2.5 * 1.5 = 3.75, 2 * 1.5 = 3
     ctx.stroke()
   }
   ctx.globalAlpha = 1

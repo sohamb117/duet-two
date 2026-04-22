@@ -8,11 +8,15 @@ const MISS_WINDOW        = 0.150
 const SCORE_PERFECT = 300
 const SCORE_GOOD    = 100
 
+// Level durations in seconds
+const LEVEL_DURATIONS = [74, 74, 78]
+
 let beatMap    = []
 let beatIndex  = 0
 let dots       = []
 let running    = false
 let freePlayMode = false
+let currentLevel = 0
 
 let score    = 0
 let combo    = 0
@@ -51,6 +55,10 @@ export function setFreePlayMode(enabled) {
   freePlayMode = enabled
   beatMap = []
   totalNotes = 0
+}
+
+export function setCurrentLevel(level) {
+  currentLevel = level
 }
 
 export function getRecordedBeats() {
@@ -232,8 +240,9 @@ export function update() {
     return true
   })
 
-  // end condition
-  if (beatIndex >= beatMap.length && dots.length === 0 && !failed) {
+  // end condition - check if we've reached the level duration
+  const levelDuration = LEVEL_DURATIONS[currentLevel] || 74
+  if (now >= levelDuration && !failed) {
     running = false
     onEnd(score, maxCombo, getAccuracy())
   }

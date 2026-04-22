@@ -2,7 +2,7 @@ const { ipcRenderer } = window.require('electron')
 import { parseOsu } from './parser.js'
 import { loadAudio, play, stop, setOffset, setVolume, initAudio, isReady, playHitSound, loadHitSound, songTime, getAudioDuration, setOnSongEnd } from './audio.js'
 import { initRenderer, clearFrame, drawStatic, drawButtons, drawNote } from './renderer.js'
-import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane, setFreePlayMode, getRecordedBeats, loadRecordedBeats, endFreePlay } from './game.js'
+import { initGame, loadMap, startGame, stopGame, update, getDots, triggerLane, setFreePlayMode, getRecordedBeats, loadRecordedBeats, endFreePlay, setCurrentLevel } from './game.js'
 import { initUI, setMapInfo, setStatus, setStartEnabled, updateScore, showFeedback, showStartScreen, showHUD, showResults, updateLevelInfo, updateProgressBar, triggerDieFlash } from './ui.js'
 import { initGamepad, pollGamepads, getPressedLanes } from './gamepad.js'
 import './backgrounds.css'
@@ -18,6 +18,12 @@ const TOTAL_LEVELS = 3
 let   currentLevel = 0
 let   level1RecordedBeats = null  // Store beats recorded in level 1
 let   dieFlashTriggered = false   // Track if DIE flash has been shown
+
+// Expected song durations (in seconds) with 1 second padding for closure
+// Level 0: 74s (73s + 1s padding)
+// Level 1: 74s (73s + 1s padding)
+// Level 2: 78s (77s + 1s padding)
+// DIE flash triggers at 67.5s on Level 2 (Level 3 in UI)
 
 // ── init ──────────────────────────────────────────────────────────────────────
 initRenderer()
@@ -91,6 +97,9 @@ loadHitSounds()
 
 // ── file loading ──────────────────────────────────────────────────────────────
 async function loadOsu() {
+  // Set current level in game module
+  setCurrentLevel(currentLevel)
+
   // Level 1 is free-play mode with no beatmap
   if (currentLevel === 1) {
     setFreePlayMode(true)
@@ -228,8 +237,8 @@ function loop() {
   if (duration > 0) {
     updateProgressBar(currentTime, duration)
 
-    // Trigger DIE flash on level 2 (index 2) when 5 seconds remain
-    if (currentLevel === 2 && !dieFlashTriggered && duration - currentTime <= 5 && duration - currentTime > 4.5) {
+    // Trigger DIE flash on level 3 at 67.5 seconds
+    if (currentLevel === 2 && !dieFlashTriggered && currentTime >= 67.5 && currentTime < 68) {
       triggerDieFlash()
       dieFlashTriggered = true
     }
