@@ -22,7 +22,7 @@ let   dieFlashTriggered = false   // Track if DIE flash has been shown
 // Expected song durations (in seconds) with 1 second padding for closure
 // Level 0: 74s (73s + 1s padding)
 // Level 1: 74s (73s + 1s padding)
-// Level 2: 78s (77s + 1s padding)
+// Level 2: 82s (81s + 1s padding)
 // DIE flash triggers at 67.5s on Level 2 (Level 3 in UI)
 
 // ── init ──────────────────────────────────────────────────────────────────────

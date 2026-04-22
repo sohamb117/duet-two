@@ -296,11 +296,11 @@ export function triggerDieFlash() {
     void overlayEl.offsetWidth
     overlayEl.classList.add('flash')
 
-    // Remove classes after animation completes
+    // Remove classes after 1 second
     setTimeout(() => {
       dieEl.classList.remove('flash')
       overlayEl.classList.remove('flash')
-    }, 200)
+    }, 1000)
   }
 }
 
@@ -644,7 +644,7 @@ function injectStyles() {
     }
 
     .die-overlay.flash {
-      animation: flashOverlay 0.2s ease-in;
+      opacity: 1;
     }
 
     .die-flash {
@@ -663,22 +663,12 @@ function injectStyles() {
     }
 
     .die-flash.flash {
-      animation: flashDie 0.2s ease-in;
+      opacity: 1;
     }
 
     html.inverted .die-overlay,
     html.inverted .die-flash {
       filter: invert(1);
-    }
-
-    @keyframes flashOverlay {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-
-    @keyframes flashDie {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
     }
   `
   document.head.appendChild(style)
