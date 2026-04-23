@@ -238,7 +238,7 @@ function loop() {
     updateProgressBar(currentTime, duration)
 
     // Trigger DIE flash on level 3 at 67.5 seconds
-    if (currentLevel === 2 && !dieFlashTriggered && currentTime >= 67.5 && currentTime < 68) {
+    if (currentLevel === 2 && !dieFlashTriggered && currentTime >= 69.5 && currentTime < 70) {
       triggerDieFlash()
       dieFlashTriggered = true
     }
